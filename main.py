@@ -10,7 +10,7 @@ from database import Database, Columns
 import book
 from book import Book, BookList
 import wheel
-from wheel import codify
+from wheel import form_in_app_user_name
 
 
 # --------------------------- BOT CONFIG ---------------------------------------
@@ -216,17 +216,19 @@ async def repeat(ctx: commands.Context, word: str, n: int):
     description='create user profile'
 )
 async def start(ctx: commands.Context):
+    # TODO: Lookup users by id. Return an error if user is already registered.
+    in_app_user_name: str = form_in_app_user_name(ctx.author)
     db.exec_void(
-        f'INSERT INTO users (name, user_id, server_id, is_private, privileges)'
-        + " VALUES ('{name}', {uid}, {sid}, {is_private}, '{privileges}');".format(
-            name=ctx.author.name,
+        f'INSERT INTO users (name, user_id, server_id, is_private, is_admin)'
+        + " VALUES ('{name}', {uid}, {sid}, {is_private}, {is_admin});".format(
+            name=in_app_user_name,
             uid=ctx.author.id,
             sid=(ctx.guild.id if ctx.guild else "NULL"),
             is_private=False,
-            privileges=[]
+            is_admin=False,
         )
     )
-    await ctx.send(f'User {ctx.author.mention} registered')
+    await ctx.send(f'User {ctx.author.mention} registered in users')
     columns: Columns = {
         'title':     'varchar(300)',
         # every other column may contain NULLs
@@ -235,9 +237,13 @@ async def start(ctx: commands.Context):
         'passion':   'smallint',
         'review':    'text',
     }
-    db.create_table("books." + str(ctx.author.id), columns)
+    db.create_table(
+        f'books.{in_app_user_name}',
+        columns,
+        not_null_primary_key=1
+    )
     await ctx.send(
-        f'Profile table for {ctx.author.mention} created'
+        f'Books table for {ctx.author.mention} created'
     )
 
 
