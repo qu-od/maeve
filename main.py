@@ -280,4 +280,3 @@ def load_bot_command_extensions():
 
 load_bot_command_extensions()
 bot.run(os.getenv("MAEVE_TOKEN"))
-
