@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Any
+from typing import Dict, List, Literal, Any, Optional
 import os
 import functools
 
@@ -35,6 +35,7 @@ Columns = Dict[ColumnName, SqlType]
 
 
 # ------------------------- DATABASE CLASS -------------------------------------
+# TODO secure database queries from something something!
 class Database:
 
     @staticmethod
@@ -81,11 +82,37 @@ class Database:
         """ Table format: table_schema.table_name"""
         self.exec_void(f'DROP TABLE {name};')
 
-    def create_table(self, name: TableName, columns: Columns):
-        columns_for_query: str = ",\n".join(
+    def create_table(
+            self,
+            name: TableName,
+            columns: Columns,
+            not_null_primary_key: Optional[int]=None
+    ):
+        if (not_null_primary_key < 1) \
+                or (not_null_primary_key > len(columns)):
+            print("Wrong value for not_null_primary_key parameter")
+            return
+        lines_for_columns_query: List[str] = [
             f'{c_name} {c_type}'
             for c_name, c_type in columns.items()
-        )
+        ]
+        if not_null_primary_key:
+            lines_for_columns_query[not_null_primary_key - 1] += ' NOT NULL'
+            primary_key_column_name: str =\
+                lines_for_columns_query[not_null_primary_key - 1].split(' ')[0]
+            lines_for_columns_query.append(
+                f'PRIMARY KEY ({primary_key_column_name})'
+            )
+        columns_query: str = ',\n'.join(lines_for_columns_query)
         self.exec_void(
-            f'CREATE TABLE {name} ({columns_for_query});'
+            f'CREATE TABLE {name} ({columns_query});'
         )
+
+
+    def get_user_name_by_id(self, user_id: int) -> str:
+        rows: List[tuple] = self.exec_select(
+            f"SELECT name FROM users WHERE user_id = '{user_id}';"
+        )
+        return rows[0][0]
+
+

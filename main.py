@@ -10,7 +10,7 @@ from database import Database, Columns
 import book
 from book import Book, BookList
 import wheel
-from wheel import codify
+from wheel import form_in_app_user_name
 
 
 # --------------------------- BOT CONFIG ---------------------------------------
@@ -40,6 +40,7 @@ class Bot:
     intents = discord.Intents.default()
     intents.members = True
     intents.message_content = True
+
 
     self.bot = commands.Bot(
         command_prefix=commands.when_mentioned_or("!m "),
@@ -228,3 +229,143 @@ class Bot:
       bot.load_extension('match_cmds')
 
 bot = Bot()
+
+
+@bot.slash_command(
+    name='start2',
+    description='create user profile'
+)
+async def start2(ctx: commands.Context):
+    # TODO: Lookup users by id. Return an error if user is already registered.
+    in_app_user_name: str = form_in_app_user_name(ctx.author)
+    db.exec_void(
+        f'INSERT INTO users (name, user_id, server_id, is_private, is_admin)'
+        + " VALUES ('{name}', {uid}, {sid}, {is_private}, {is_admin});".format(
+            name=in_app_user_name,
+            uid=ctx.author.id,
+            sid=(ctx.guild.id if ctx.guild else "NULL"),
+            is_private=False,
+            is_admin=False,
+        )
+    )
+    await ctx.send(f'User {ctx.author.mention} registered in users')
+    columns: Columns = {
+        'title':     'varchar(300)',
+        # every other column may contain NULLs
+        'author':    'varchar(300)',
+        'read_year': 'integer',
+        'passion':   'smallint',
+        'review':    'text',
+    }
+    db.create_table(
+        f'books.{in_app_user_name}',
+        columns,
+        not_null_primary_key=1
+    )
+    await ctx.send(
+        f'Books table for {ctx.author.mention} created'
+    )
+
+
+@bot.slash_command(name='book2')
+async def book2(
+        ctx: commands.Context, title: str, author: str,
+        read_year: int, passion: int
+):
+    user_name: str = db.get_user_name_by_id(ctx.author.id)
+    db.exec_void(
+        f'INSERT INTO books.{user_name}'
+        + ' (title, author, read_year, passion, review)'
+        + f" VALUES ('{title}', '{author}', {read_year}, {passion}, NULL);"
+    )
+    await ctx.send(
+        "Reply test and also you've added the book, "
+        + ctx.author.mention + " !"
+    )
+
+
+@bot.slash_command(
+    name='delete_profile',
+    description=('deletes your entire book profile.'
+                 + 'All matches, booklists and reviews'
+                 )
+)
+async def delete_profile(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='delete',
+    description='Show your booklist in paginator'
+)
+async def list(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='update',
+    description='Show your booklist in paginator'
+)
+async def list(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='list',
+    description='Show your booklist in paginator'
+)
+async def list(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='review',
+    description='Show your booklist in paginator'
+)
+async def review(ctx: commands.Context):
+    pass
+
+
+
+# TODO: remove globals (into classes) and divide commands into modules
+
+# TODO: delete profile (and books table)
+# TODO: show all his books to user. Using pagination
+# TODO: delete one book
+# TODO: update one book
+# TODO: add review to the book
+
+# TODO: sharing the booklist
+# TODO: finding book intersections
+# TODO: book title standardization (standard_input_format + variation rules)
+# TODO: scraping message history of FB guild for book mentions
+# TODO: Collecting book mentions and reviews from FB guild
+
+# TODO: translate command names and arguments
+# TODO: remove that "app is not responding marker somehow"
+# TODO: add admin-only check on admin commands
+# TODO: test unpredictable user behavior (ask testers for help)
+# TODO: make a RESTFUL API for Maeve database (ask somebody for a frontend)
+
+# --------------------------- BOT SETUP ----------------------------------------
+'''def reload_modules():
+    reload(database)
+    reload(book)
+    reload(wheel)
+
+
+def reload_commands():
+    bot.reload_extension('book_cmds')
+    bot.reload_extension('profile_cmds')
+    bot.reload_extension('match_cmds')
+
+
+def load_bot_command_extensions():
+    bot.load_extension('book_cmds')
+    bot.load_extension('profile_cmds')
+    bot.load_extension('match_cmds')
+
+
+load_bot_command_extensions()
+bot.run(os.getenv("MAEVE_TOKEN"))'''
+
