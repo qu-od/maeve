@@ -16,4 +16,3 @@ def form_in_app_user_name(member: discord.member) -> str:
         + "_" + member.discriminator
     )
 
-
