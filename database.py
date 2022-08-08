@@ -35,6 +35,7 @@ Columns = Dict[ColumnName, SqlType]
 
 
 # ------------------------- DATABASE CLASS -------------------------------------
+# TODO secure database queries from something something!
 class Database:
 
     @staticmethod
@@ -107,11 +108,11 @@ class Database:
             f'CREATE TABLE {name} ({columns_query});'
         )
 
-    # TODO in_app_name lookup from "users" table
-    '''def get_user_name_by_id(self, user_id: int) -> str:
-        self.exec_select(
-            "SELECT name "
+
+    def get_user_name_by_id(self, user_id: int) -> str:
+        rows: List[tuple] = self.exec_select(
+            f"SELECT name FROM users WHERE user_id = '{user_id}';"
         )
-        return'''
+        return rows[0][0]
 
 

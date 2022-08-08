@@ -251,13 +251,83 @@ async def start(ctx: commands.Context):
 async def book(
         ctx: commands.Context, title: str, author: str,
         read_year: int, passion: int
-): 
+):
+    user_name: str = db.get_user_name_by_id(ctx.author.id)
     db.exec_void(
-        f'INSERT INTO books.{ctx.author.id}'
+        f'INSERT INTO books.{user_name}'
         + ' (title, author, read_year, passion, review)'
         + f" VALUES ('{title}', '{author}', {read_year}, {passion}, NULL);"
     )
+    await ctx.send(
+        "Reply test and also you've added the book, "
+        + ctx.author.mention + " !"
+    )
 
+
+@bot.slash_command(
+    name='delete_profile',
+    description=('deletes your entire book profile.'
+                 + 'All matches, booklists and reviews'
+                 )
+)
+
+
+async def delete_profile(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='delete',
+    description='Show your booklist in paginator'
+)
+async def list(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='update',
+    description='Show your booklist in paginator'
+)
+async def list(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='list',
+    description='Show your booklist in paginator'
+)
+async def list(ctx: commands.Context):
+    pass
+
+
+@bot.slash_command(
+    name='review',
+    description='Show your booklist in paginator'
+)
+async def review(ctx: commands.Context):
+    pass
+
+
+
+# TODO: remove globals (into classes) and divide commands into modules
+
+# TODO: delete profile (and books table)
+# TODO: show all his books to user. Using pagination
+# TODO: delete one book
+# TODO: update one book
+# TODO: add review to the book
+
+# TODO: sharing the booklist
+# TODO: finding book intersections
+# TODO: book title standardization (standard_input_format + variation rules)
+# TODO: scraping message history of FB guild for book mentions
+# TODO: Collecting book mentions and reviews from FB guild
+
+# TODO: translate command names and arguments
+# TODO: remove that "app is not responding marker somehow"
+# TODO: add admin-only check on admin commands
+# TODO: test unpredictable user behavior (ask testers for help)
+# TODO: make a RESTFUL API for Maeve database (ask somebody for a frontend)
 
 # --------------------------- BOT SETUP ----------------------------------------
 def reload_modules():
