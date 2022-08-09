@@ -78,6 +78,7 @@ class Database:
     def exec_void(self, cursor, query: str):
         cursor.execute(query)
 
+    # ----------------------------- TABLE QUERIES ------------------------------
     def delete_table(self, name: str):
         """ Table format: table_schema.table_name"""
         self.exec_void(f'DROP TABLE {name};')
@@ -108,11 +109,27 @@ class Database:
             f'CREATE TABLE {name} ({columns_query});'
         )
 
-
-    def get_user_name_by_id(self, user_id: int) -> str:
+    # ----------------------------- SPECIAL QUERIES ----------------------------
+    def get_in_app_user_name_by_id(self, user_id: int) -> str:
         rows: List[tuple] = self.exec_select(
-            f"SELECT name FROM users WHERE user_id = '{user_id}';"
+            f"SELECT name FROM users WHERE user_id = {user_id};"
         )
         return rows[0][0]
+
+    def add_book(
+            self, table_name: str,
+            title: str, author: str,
+            read_year: int, passion: int
+    ):
+        self.db.exec_void(
+            f'INSERT INTO books.{table_name}'
+            + ' (title, author, read_year, passion, review)'
+            + f" VALUES ('{title}', '{author}', {read_year}, {passion}, NULL);"
+        )
+
+    def delete_book(self, table_name: str, title: str):
+        self.exec_void(
+            f"DELETE FROM {table_name} WHERE title = '{title}'"
+        )
 
 
