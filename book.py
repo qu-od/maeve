@@ -5,14 +5,50 @@ from dataclasses import dataclass
 from database import Database
 
 
-# ----------------------- BOOK DATA DATACLASS ----------------------------------
+# --------------------- BOOK DATA DATACLASSES ----------------------------------
 @dataclass
 class BookData:
-    title: str
-    author: Optional[str]
-    read_year: Optional[int]
-    interest: Optional[int]
-    review: Optional[str]
+    def __init__(
+        self, title: str,
+        author: Optional[str] = None,
+        read_year: Optional[int] = None,
+        interest: Optional[int] = None,
+        review: Optional[str] = None
+    ):
+        self.title: str = title
+        self.author: Optional[str] = author
+        self.read_year: Optional[int] = read_year
+        self.interest: Optional[int] = interest
+        self.review: Optional[str] = review
+
+    def __str__(self):
+        return (
+            f'"{self.title}" ({self.author})."'
+            + f" Read in {self.read_year}."
+            + f" P{self.interest}. {self.cropped_review}..."
+        )
+
+    def str_ru(self):
+        return (
+            f'"{self.title}" ({self.author})."'
+            + f" {self.read_year} г. и{self.interest}"
+        )
+
+    def cropped_review(self, review_len: Optional[int] = 100) -> str:
+        return self.review[:review_len]
+
+
+class BookDataStrict:  # just to speed up books user input
+    def __init__(
+        self, title: str,
+        author: str, read_year: int,
+        interest: int, review: str
+    ):
+        self.title: str = title
+        self.author: str = author
+        self.read_year: int = read_year
+        self.interest: int = interest
+        self.review: str = review
 
 
 # ----------------------------- BOOK CLASS -------------------------------------
@@ -34,28 +70,7 @@ class Book:
 
     db = Database()
 
-    def __init__(
-            self, title: Title,
-            author: Author = None,
-            read_year: ReadYear = None,
-            interest: Interest = None
-    ):
-        self.title: str = title
-        self.author: Optional[str] = author
-        self.read_year: Optional[int] = read_year
-        self.interest: Optional[int] = interest
-
-    def __str__(self):
-        return (
-            f'"{self.title}" ({self.author})."'
-            + f" Read in {self.read_year}. P{self.interest}"
-        )
-
-    def str_ru(self):
-        return (
-            f'"{self.title}" ({self.author})."'
-            + f" {self.read_year}г. И{self.interest}"
-        )
+    # INIT was there.
 
     # ----------------------- INPUT FORMATTING ---------------------------------
     @staticmethod
@@ -183,6 +198,14 @@ class Book:
             f"DELETE FROM books.{user_name} WHERE title = '{title}';"
         )
 
+    @staticmethod
+    def new_review(user_id: int, title: str, review: str):
+        user_name: str = Book.db.get_in_app_user_name_by_id(user_id)
+        Book.db.exec_void(
+            f"UPDATE books.{user_name} SET review = '{review}'"
+            + f"WHERE title = '{title}';"
+        )
+
     # ------------------------------- MISC -------------------------------------
     @staticmethod
     def opt_str(maybe_str: Optional[str]) -> str:
@@ -191,6 +214,8 @@ class Book:
     @staticmethod
     def opt_int(maybe_int: Optional[int]) -> str:
         return str(maybe_int) if maybe_int else "NULL"
+
+
 
 
 

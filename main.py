@@ -8,7 +8,7 @@ from discord.ext import commands
 import database
 from database import Database, Columns
 import book
-from book import Book, BookList
+from book import Book, BookList, BookData, BookDataStrict
 import wheel
 from wheel import form_in_app_user_name
 
@@ -32,6 +32,20 @@ slash_command_guilds: List[int] = [
 ]
 
 
+# ----------------------- CUSTOM CONVERTER CLASSES -----------------------------
+class BookDataStrictConverter(commands.Converter):
+    async def convert(
+            self, ctx: commands.Context, argument: str
+    ) -> BookDataStrict:
+        return BookDataStrict(
+            "title_from_converter",
+            "author_from_converter",
+            1970, 5,
+            "review_from_converter"
+        )
+
+
+# ------------------------- MY BOT CLASS ---------------------------------------
 class MaeveBot:
     bot = None
     db = None
@@ -46,7 +60,8 @@ class MaeveBot:
             description=description,
             intents=self.intents,
             # comment debug_guilds to enable slash commands globally
-            # debug_guilds=slash_command_guilds
+            # slash commands will take up to an hour to update then
+            debug_guilds=slash_command_guilds
         )
         self.db = Database()
         self.test_books = BookList()
@@ -178,6 +193,15 @@ class MaeveBot:
         )
         await ctx.send(f"{ctx.author.mention} deleted from users.")
 
+    '''
+    async def book_with_auto_convo(  # TODO NEED TESTING
+            self, ctx: commands.Context,
+            book_data_strict: BookDataStrictConverter
+    ):
+        await ctx.send(str(book_data_strict))
+        await ctx.send("book_with_auto_convo worked")
+    '''
+
     async def book(
             self, ctx: commands.Context,
             title: Book.Title,
@@ -214,26 +238,24 @@ class MaeveBot:
         await ctx.send(f'Book "{title}" updated.')
 
     async def show_plain_text(self, ctx: commands.Context):
-        # reviews aren't shown there in any way
-        table_name: str = self.user_book_table_name(ctx.author.id)
-        book_rows: List[tuple] = self.db.exec_select(
-            f"SELECT title, author, read_year, interest FROM {table_name}"
+        book_data_list: List[BookData] = Book.read_all(ctx.author.id)
+        await ctx.send(
+            ",\n".join(book_data.str_ru() for book_data in book_data_list)
         )
-        await ctx.send(",\n".join(list(map(self.book_row_to_str_ru, book_rows))))
 
-    async def show(self, ctx: commands.Context):
-        pass
+    async def show(self, ctx: commands.Context, test_string):
+        await ctx.send("show command worked")
 
     async def delete(self, ctx: commands.Context, title: str):
         # TODO choose books by id not a title (add id column to books tables)
-        self.db.exec_void(
-            f"DELETE FROM {self.user_book_table_name(ctx.author.id)}"
-            + f" WHERE title = '{title}';"
-        )
+        Book.delete(ctx.author.id, title)
         await ctx.send(f'Book "{title}" deleted.')
 
-    async def review(self, ctx: commands.Context):
-        pass
+    async def review(
+            self, ctx: commands.Context,
+            title: str, review: str):
+        Book.new_review(ctx.author.id, title, review)
+        await ctx.send(f'Review added to "{title}" book')
 
     # ---------------------------- MISC ----------------------------------------
     def app_user_name(self, user_id: int) -> str:
@@ -286,14 +308,10 @@ class MaeveBot:
 
 
 # TODO: better user errors and feedback on command execution
-# TODO: remove globals (into classes) and divide commands into modules
-# TODO: add admin-only check on admin commands
+# TODO: divide commands into modules
 
-# TODO: delete profile (and books table)
-# TODO: show all his books to user. Using pagination
-# TODO: delete one book
-# TODO: update one book
-# TODO: add review to the book
+# TODO: implement Paginator (with buttons) to show all books
+# TODO: check if book in books when updating one
 
 # TODO: sharing the booklist
 # TODO: finding book intersections
@@ -304,6 +322,7 @@ class MaeveBot:
 # TODO: translate command names and arguments
 # TODO: remove that "app is not responding marker somehow"
 # TODO: test unpredictable user behavior (ask testers for help)
+
 # TODO: make a RESTFUL API for Maeve database (ask somebody for a frontend)
 
 
