@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import os
 from importlib import reload
 
@@ -8,7 +8,7 @@ from discord.ext import commands
 import database
 from database import Database, Columns
 import book
-from book import BookList
+from book import Book, BookList
 import wheel
 from wheel import form_in_app_user_name
 
@@ -45,7 +45,8 @@ class MaeveBot:
             command_prefix=commands.when_mentioned_or("!m "),
             description=description,
             intents=self.intents,
-            debug_guilds=slash_command_guilds
+            # comment debug_guilds to enable slash commands globally
+            # debug_guilds=slash_command_guilds
         )
         self.db = Database()
         self.test_books = BookList()
@@ -63,43 +64,42 @@ class MaeveBot:
         # TODO make groups out of slash commands without decorators
         self.bot.slash_command(
             name='start',
-            description='create user profile'
+            description='Создать профиль.'
         )(self.start)
 
         self.bot.slash_command(
-            name='book'
+            name='book',
+            description='Добавить книгу.'
         )(self.book)
 
         self.bot.slash_command(
             name='delete_profile',
-            description=('deletes your entire book profile.'
-                         + 'All matches, booklists and reviews'
-                         )
+            description='Удалить профиль и всё книги.'
         )(self.delete_profile)
 
         self.bot.slash_command(
             name='delete',
-            description='Deletes a book'
+            description='Удалить запись о книге.'
         )(self.delete)
 
         self.bot.slash_command(
             name='update',
-            description='Updates a book'
+            description='Редактировать запись о книге.'
         )(self.update)
 
         self.bot.slash_command(
             name='show_plain_text',
-            description='Sends message with books'
+            description='Запросить сообщение со списком книг.'
         )(self.show_plain_text)
 
         self.bot.slash_command(
             name='show',
-            description='Show your booklist in paginator'
+            description='Запросить тетрадку со списком книг.'
         )(self.show)
 
         self.bot.slash_command(
             name='review',
-            description='Adds a review to a book'
+            description='Добавить рецензию на книгу.'
         )(self.review)
 
         self.load_bot_command_extensions()
@@ -112,6 +112,8 @@ class MaeveBot:
 
     # ------------------------- ADMIN COMMANDS --------------------------------
     async def _reload(self, ctx: commands.Context):
+        if not self.is_admin(ctx.author.id):
+            return  # silently
         try:
             self.reload_modules()
         except Exception:
@@ -166,21 +168,35 @@ class MaeveBot:
             title: str, author: str,
             read_year: int, passion: int
     ):
-        user_name: str = self.db.get_user_name_by_id(ctx.author.id)
+        user_name: str = self.db.get_in_app_user_name_by_id(ctx.author.id)
+        formatting_results: Tuple[
+                Book.Title, Book.Author,
+                Book.ReadYear, Book.Passion,
+                bool, Optional[str]] = \
+            Book.format(title, author, read_year, passion)
+        new_book = Book(*formatting_results[:4])
+        # TODO new_book.add()
+        # TODO make None -> NULL conversion
         self.db.exec_void(
             f'INSERT INTO books.{user_name}'
             + ' (title, author, read_year, passion, review)'
-            + f" VALUES ('{title}', '{author}', {read_year}, {passion}, NULL);"
+            + f" VALUES ('{new_book.title}', '{new_book.author}',"
+            + f" {new_book.read_year}, {new_book.passion}, NULL);"
         )
         await ctx.send(
             "You've added the book, "
             + ctx.author.mention + " !"
         )
+        if not formatting_results[4]:
+            await ctx.send(
+                "However format was wrong:\n"
+                + formatting_results[5]
+            )
 
     async def delete_profile(self, ctx: commands.Context):
         if not self.is_user_registered(ctx.author.id):
             await ctx.send(
-                "You must've registered first to be able to delete your profile."
+                "You must register first to be able to delete your profile."
             )
             return
         # TODO output book table to the user packed in files before deleting
@@ -195,7 +211,8 @@ class MaeveBot:
     async def delete(self, ctx: commands.Context, title: str):
         # TODO choose books by id not a title (add id column to books tables)
         self.db.exec_void(
-            f"DELETE FROM {self.user_book_table_name} WHERE title = '{title}'"
+            f"DELETE FROM {self.user_book_table_name(ctx.author.id)}"
+            + f" WHERE title = '{title}';"
         )
         await ctx.send(f'Book "{title}" deleted.')
 
@@ -206,8 +223,7 @@ class MaeveBot:
             ):
         # TODO choose books by id not a title (add id column to books tables)
         table_name: str = self.user_book_table_name(ctx.author.id)
-        self.db.delete_book(table_name, title)
-        self.db.add_book(table_name, title, author, read_year, passion)
+        self.db.update_book(table_name, title, author, read_year, passion)
         await ctx.send(f'Book "{title}" updated.')
 
     async def show_plain_text(self, ctx: commands.Context):
@@ -234,13 +250,19 @@ class MaeveBot:
     @staticmethod
     def book_row_to_str(book_row: Tuple[str, str, int, int]) -> str:
         title, author, read_year, passion = book_row
-        return f'"{title}" - author. Read in {read_year}. Passion = {passion}'
+        return f'"{title}" - {author}. Read in {read_year}. Passion = {passion}'
 
     def is_user_registered(self, user_id: int) -> bool:
         user_rows: List[tuple] = self.db.exec_select(
             f"SELECT name FROM users WHERE user_id = {user_id};"
         )
-        return bool(user_rows)  # NEED TESTING
+        return bool(user_rows)
+
+    def is_admin(self, user_id: int) -> bool:
+        user_rows: List[tuple] = self.db.exec_select(
+            f"SELECT is_admin FROM users WHERE user_id = {user_id};"
+        )
+        return user_rows and user_rows[0][0]
 
     # ---------------------------- LOADS ---------------------------------------
     def load_bot_command_extensions(self):
@@ -250,7 +272,8 @@ class MaeveBot:
         # self.bot.load_extension('booklist_pages')
 
     # --------------------------- RELOADS --------------------------------------
-    def reload_modules(self):
+    @staticmethod
+    def reload_modules():
         reload(database)
         reload(book)
         reload(wheel)
