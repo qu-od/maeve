@@ -87,7 +87,7 @@ class Database:
             self,
             name: TableName,
             columns: Columns,
-            not_null_primary_key: Optional[int]=None
+            not_null_primary_key: Optional[int] = None
     ):
         if (not_null_primary_key < 1) \
                 or (not_null_primary_key > len(columns)):
@@ -115,33 +115,5 @@ class Database:
             f"SELECT name FROM users WHERE user_id = {user_id};"
         )
         return rows[0][0]
-
-    def add_book(
-            self, table_name: str,
-            title: str, author: str,
-            read_year: int, passion: int
-    ):
-        self.exec_void(
-            f'INSERT INTO {table_name}'
-            + ' (title, author, read_year, passion, review)'
-            + f" VALUES ('{title}', '{author}', {read_year}, {passion}, NULL);"
-        )
-
-    def update_book(
-            self, table_name: str,
-            title: str, author: str,
-            read_year: int, passion: int
-    ):
-        self.exec_void(
-            f"UPDATE {table_name}"
-            + f" SET author = '{author}',"
-            + f" read_year = {read_year}, passion = {passion}"
-            + f" WHERE title = '{title}';"
-        )
-
-    def delete_book(self, table_name: str, title: str):
-        self.exec_void(
-            f"DELETE FROM {table_name} WHERE title = '{title}'"
-        )
 
 

@@ -151,7 +151,7 @@ class MaeveBot:
             # every other column may contain NULLs
             'author':    'varchar(300)',
             'read_year': 'integer',
-            'passion':   'smallint',
+            'interest':   'smallint',
             'review':    'text',
         }
         self.db.create_table(
@@ -162,36 +162,6 @@ class MaeveBot:
         await ctx.send(
             f'Books table for {ctx.author.mention} created'
         )
-
-    async def book(
-            self, ctx: commands.Context,
-            title: str, author: str,
-            read_year: int, passion: int
-    ):
-        user_name: str = self.db.get_in_app_user_name_by_id(ctx.author.id)
-        formatting_results: Tuple[
-                Book.Title, Book.Author,
-                Book.ReadYear, Book.Passion,
-                bool, Optional[str]] = \
-            Book.format(title, author, read_year, passion)
-        new_book = Book(*formatting_results[:4])
-        # TODO new_book.add()
-        # TODO make None -> NULL conversion
-        self.db.exec_void(
-            f'INSERT INTO books.{user_name}'
-            + ' (title, author, read_year, passion, review)'
-            + f" VALUES ('{new_book.title}', '{new_book.author}',"
-            + f" {new_book.read_year}, {new_book.passion}, NULL);"
-        )
-        await ctx.send(
-            "You've added the book, "
-            + ctx.author.mention + " !"
-        )
-        if not formatting_results[4]:
-            await ctx.send(
-                "However format was wrong:\n"
-                + formatting_results[5]
-            )
 
     async def delete_profile(self, ctx: commands.Context):
         if not self.is_user_registered(ctx.author.id):
@@ -208,6 +178,52 @@ class MaeveBot:
         )
         await ctx.send(f"{ctx.author.mention} deleted from users.")
 
+    async def book(
+            self, ctx: commands.Context,
+            title: Book.Title,
+            author: Book.Author,  # TODO TEST NONE POSSIBILITY ON USER SIDE
+            read_year: Book.ReadYear,
+            interest: Book.Interest
+    ):
+        wrong_format_msg: Optional[str] =\
+            Book.create(
+                ctx.author.id,
+                title, author,
+                read_year, interest
+            )
+        await ctx.send(
+            "You've added the book, "
+            + ctx.author.mention + " !"
+        )
+        if wrong_format_msg:
+            await ctx.send(
+                "However format was wrong:\n"
+                + wrong_format_msg
+            )
+
+    async def update(  # review updated separately with "/review"
+            self, ctx: commands.Context,
+            title: str, author: str,
+            read_year: int, interest: int
+            ):
+        # TODO choose books by id not a title (add id column to books tables)
+        Book.update(
+            ctx.author.id, title,
+            author, read_year, interest
+        )
+        await ctx.send(f'Book "{title}" updated.')
+
+    async def show_plain_text(self, ctx: commands.Context):
+        # reviews aren't shown there in any way
+        table_name: str = self.user_book_table_name(ctx.author.id)
+        book_rows: List[tuple] = self.db.exec_select(
+            f"SELECT title, author, read_year, interest FROM {table_name}"
+        )
+        await ctx.send(",\n".join(list(map(self.book_row_to_str_ru, book_rows))))
+
+    async def show(self, ctx: commands.Context):
+        pass
+
     async def delete(self, ctx: commands.Context, title: str):
         # TODO choose books by id not a title (add id column to books tables)
         self.db.exec_void(
@@ -215,27 +231,6 @@ class MaeveBot:
             + f" WHERE title = '{title}';"
         )
         await ctx.send(f'Book "{title}" deleted.')
-
-    async def update(  # review updated separately with "/review"
-            self, ctx: commands.Context,
-            title: str, author: str,
-            read_year: int, passion: int
-            ):
-        # TODO choose books by id not a title (add id column to books tables)
-        table_name: str = self.user_book_table_name(ctx.author.id)
-        self.db.update_book(table_name, title, author, read_year, passion)
-        await ctx.send(f'Book "{title}" updated.')
-
-    async def show_plain_text(self, ctx: commands.Context):
-        # reviews aren't shown there in any way
-        table_name: str = self.user_book_table_name(ctx.author.id)
-        book_rows: List[tuple] = self.db.exec_select(
-            f"SELECT title, author, read_year, passion FROM {table_name}"
-        )
-        await ctx.send(",\n".join(list(map(self.book_row_to_str, book_rows))))
-
-    async def show(self, ctx: commands.Context):
-        pass
 
     async def review(self, ctx: commands.Context):
         pass
@@ -249,8 +244,13 @@ class MaeveBot:
 
     @staticmethod
     def book_row_to_str(book_row: Tuple[str, str, int, int]) -> str:
-        title, author, read_year, passion = book_row
-        return f'"{title}" - {author}. Read in {read_year}. Passion = {passion}'
+        title, author, read_year, interest = book_row
+        return f'"{title}" - {author}. Read in {read_year}. Interest = {interest}'
+
+    @staticmethod
+    def book_row_to_str_ru(book_row: Tuple[str, str, int, int]) -> str:
+        title, author, read_year, interest = book_row
+        return f'"{title}" - {author}. {read_year} г. и{interest}'
 
     def is_user_registered(self, user_id: int) -> bool:
         user_rows: List[tuple] = self.db.exec_select(
