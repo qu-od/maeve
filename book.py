@@ -2,7 +2,10 @@ from typing import List, Dict, Tuple, Optional, Union, Any
 import datetime
 from dataclasses import dataclass
 
+import discord
+
 from database import Database
+from wheel import fetch_member_in_guild_by_id
 
 
 # --------------------- BOOK DATA DATACLASSES ----------------------------------
@@ -38,7 +41,7 @@ class BookData:
         return self.review[:review_len]
 
 
-class BookDataStrict:  # just to speed up books user input
+class BookDataStrict:  # just to speed up books user input one day
     def __init__(
         self, title: str,
         author: str, read_year: int,
@@ -49,6 +52,14 @@ class BookDataStrict:  # just to speed up books user input
         self.read_year: int = read_year
         self.interest: int = interest
         self.review: str = review
+
+
+class UserBooks:
+    def __init__(
+        self, user: discord.User, books: List[BookData]
+    ):
+        self.user: discord.User = user
+        self.books: List[BookData] = books
 
 
 # ----------------------------- BOOK CLASS -------------------------------------
@@ -206,6 +217,29 @@ class Book:
             + f"WHERE title = '{title}';"
         )
 
+    # ---------------------- FOR BOOKLIST PAGINATOR ----------------------------
+    def get_public_user_booklists(
+            self, bot_guilds: List[discord.Guild]
+    ) -> List[UserBooks]:
+        query_rows: List[tuple] = Book.db.exec_select(
+            "SELECT user_id FROM users WHERE is_private = FALSE;"
+        )
+        ids_of_public_users: List[int] = [
+            row_tuple[0] for row_tuple in query_rows
+        ]
+        public_users: Optional[List[discord.Member]] = []
+        for user_id in ids_of_public_users:
+            user = fetch_member_in_guild_by_id(bot_guilds, user_id)
+            if not user:
+                continue
+            public_users.append(user)
+        return [
+            UserBooks(user, self.read_all(user.id))
+            for user in public_users
+        ]
+
+
+
     # ------------------------------- MISC -------------------------------------
     @staticmethod
     def opt_str(maybe_str: Optional[str]) -> str:
@@ -214,7 +248,6 @@ class Book:
     @staticmethod
     def opt_int(maybe_int: Optional[int]) -> str:
         return str(maybe_int) if maybe_int else "NULL"
-
 
 
 

@@ -1,75 +1,112 @@
+from typing import List, Tuple
 import asyncio
 
 import discord
 from discord.commands import SlashCommandGroup
 from discord.ext import commands, pages
 
-'''
+from book import BookData, UserBooks, Book
+from wheel import grouper
+
+
 class PageTest(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        self.pages = [
-            "Page 1",
-            [
-                discord.Embed(title="Page 2, Embed 1"),
-                discord.Embed(title="Page 2, Embed 2"),
-            ],
-            "Page Three",
-            discord.Embed(title="Page Four"),
-            discord.Embed(
-                title="Page Five"),
-                # fields=[
-                #     discord.EmbedField(name="Example Field", value="Example Value", inline=False),
-                # ],
-            # ),
-            [
-                discord.Embed(title="Page Six, Embed 1"),
-                discord.Embed(title="Page Seven, Embed 2"),
-            ],
-        ]
-        self.pages[3].set_image(url="https://c.tenor.com/pPKOYQpTO8AAAAAM/monkey-developer.gif")
-        self.pages[4].add_field(name="Another Example Field", value="Another Example Value", inline=False)
-
-        self.more_pages = [
-            "Second Page One",
-            discord.Embed(title="Second Page Two"),
-            discord.Embed(title="Second Page Three"),
-        ]
-
-        self.even_more_pages = ["11111", "22222", "33333"]
-
-        self.new_pages = [
-            pages.Page(
-                content="Page 1 Title!",
-                embeds=[
-                    discord.Embed(title="New Page 1 Embed Title 1!"),
-                    discord.Embed(title="New Page 1 Embed Title 2!"),
-                ],
+    def __init__(self, bot: discord.Bot):
+        self.bot: discord.Bot = bot
+        self.test_list_of_pagegroups: List[pages.PageGroup] = [
+            pages.PageGroup(
+                ["book1\nbook2\nbook3", "book4\nbook5\nbook6"],
+                "SampleUser_0000",
+                "booklist"
             ),
-            pages.Page(
-                content="Page 2 Title!",
-                embeds=[
-                    discord.Embed(title="New Page 2 Embed Title 1!"),
-                    discord.Embed(title="New Page 2 Embed Title 2!"),
-                ],
+            pages.PageGroup(
+                ["book1\nbook2\nbook3", "book4\nbook5\nbook6"],
+                "AnotherSampleUser_1111",
+                "booklist"
             ),
         ]
 
-    def get_pages(self):
-        return self.pages
+    def get_test_list_of_pagegroups(self) -> List[pages.PageGroup]:
+        return self.test_list_of_pagegroups
 
-    pagetest = SlashCommandGroup("pagetest", "Commands for testing ext.pages.")
+    def get_book_pagegroup_list(self) -> List[pages.PageGroup]:
+        public_user_booklists: List[pages.PageGroup] = list(map(
+            self._page_group_from_user_books,
+            Book().get_public_user_booklists(self.bot.guilds)
+        ))
+        print("RECIEVED USERS:")
+        print(len(Book().get_public_user_booklists(self.bot.guilds)))
+        return public_user_booklists
+
+    def _page_group_from_user_books(
+            self, user_books: UserBooks,
+            books_on_page: int = 2  # TODO return it to 10
+    ) -> pages.PageGroup:
+        partitioned_booklist: List[List[BookData]] = \
+            list(grouper(user_books.books, books_on_page, fillvalue=None))
+        booklist_part_embeds: List[discord.Embed] = [
+            self._embed_from_booklist(user_books.user, booklist_part)
+            for booklist_part in partitioned_booklist
+        ]
+        return pages.PageGroup(
+            booklist_part_embeds,
+            user_books.user.name + ".",
+            "Список прочитанного."
+        )
+
+    @staticmethod
+    def _embed_from_booklist(
+            user: discord.User,
+            books: List[BookData]
+    ) -> discord.Embed:
+        embed = discord.Embed(
+            title=user.name,
+            colour=discord.Colour.brand_green()
+        )
+        embed.set_thumbnail(url=user.avatar.url)
+        for book in books:
+            if not book:
+                embed.add_field(name="***", value="***", inline=False)
+                continue
+            embed.add_field(
+                name=book.title,
+                value=(
+                    f"{book.author} {book.read_year} г."
+                    + f" и{book.interest}"
+                    + f" {book.review[:100] if book.review else ''}...",
+                ),
+                inline=False
+            )
+        return embed
+
+    pagetest = SlashCommandGroup(
+        "pagetest", "Commands for testing ext.pages."
+    )
+
+    # --------------------- PAGETEST COMMANDS ----------------------------------
+    @pagetest.command(name="simplest_paginator")
+    async def pagetest_simplest_paginator(
+            self, ctx: discord.ApplicationContext
+    ):
+        paginator = pages.Paginator(
+            pages=self.get_test_list_of_pagegroups(),
+            show_menu=True
+        )
+        await paginator.respond(ctx.interaction, ephemeral=False)
+
+    @pagetest.command(name="public_books")
+    async def pagetest_public_books(
+            self, ctx: discord.ApplicationContext
+    ):
+        paginator = pages.Paginator(
+            pages=self.get_book_pagegroup_list(),
+            show_menu=True
+        )
+        await paginator.respond(ctx.interaction, ephemeral=False)
 
     @pagetest.command(name="default")
     async def pagetest_default(self, ctx: discord.ApplicationContext):
         """Demonstrates using the paginator with the default options."""
-        paginator = pages.Paginator(pages=self.get_pages())
-        await paginator.respond(ctx.interaction, ephemeral=False)
-
-    @pagetest.command(name="new")
-    async def pagetest_new(self, ctx: discord.ApplicationContext):
-        """Demonstrates using the paginator with the Page class."""
-        paginator = pages.Paginator(pages=self.new_pages)
+        paginator = pages.Paginator(pages=self.get_pagegroup_list())
         await paginator.respond(ctx.interaction, ephemeral=False)
 
     @pagetest.command(name="hidden")
@@ -286,4 +323,4 @@ class PageTest(commands.Cog):
 
 def setup(bot):
     bot.add_cog(PageTest(bot))
-'''
+

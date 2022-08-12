@@ -1,6 +1,7 @@
 .idea/
 __pycache__/
 venv/
+misc/
 test.py
 pycharm_test.py
 invite_link.txt

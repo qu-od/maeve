@@ -3,7 +3,7 @@ import os
 from importlib import reload
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, pages
 
 import database
 from database import Database, Columns
@@ -116,6 +116,11 @@ class MaeveBot:
             name='review',
             description='Добавить рецензию на книгу.'
         )(self.review)
+
+        self.bot.slash_command(
+            name='pages_test',
+            description='Показать тетрадку.'
+        )(self.pages_test)
 
         self.load_bot_command_extensions()
         self.bot.run(os.getenv("MAEVE_TOKEN"))
@@ -257,6 +262,17 @@ class MaeveBot:
         Book.new_review(ctx.author.id, title, review)
         await ctx.send(f'Review added to "{title}" book')
 
+    async def pages_test(
+            self, ctx: commands.Context,
+            str1: str, str2: str
+    ):
+        test_page_group = pages.PageGroup(
+            [str1, str2],
+            "test_label",
+            "test_description"
+        )
+        await ctx.send(pages.Paginator([test_page_group]))
+
     # ---------------------------- MISC ----------------------------------------
     def app_user_name(self, user_id: int) -> str:
         return self.db.get_in_app_user_name_by_id(user_id)
@@ -292,6 +308,7 @@ class MaeveBot:
         self.bot.load_extension('profile_cmds')
         self.bot.load_extension('match_cmds')
         # self.bot.load_extension('booklist_pages')
+        self.bot.load_extension('book_paginator')
 
     # --------------------------- RELOADS --------------------------------------
     @staticmethod
@@ -305,6 +322,7 @@ class MaeveBot:
         self.bot.reload_extension('profile_cmds')
         self.bot.reload_extension('match_cmds')
         # self.bot.load_extension('booklist_pages')
+        self.bot.reload_extension('book_paginator')
 
 
 # TODO: better user errors and feedback on command execution
