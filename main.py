@@ -307,8 +307,10 @@ class MaeveBot:
         self.bot.load_extension('book_cmds')
         self.bot.load_extension('profile_cmds')
         self.bot.load_extension('match_cmds')
-        # self.bot.load_extension('booklist_pages')
-        self.bot.load_extension('book_paginator')
+        # self.bot.load_extension('book_paginator')  # cog
+        self.bot.load_extension('books_view')  # cog
+        # self.bot.load_extension('buttons_example')  # cog
+
 
     # --------------------------- RELOADS --------------------------------------
     @staticmethod
@@ -321,8 +323,9 @@ class MaeveBot:
         self.bot.reload_extension('book_cmds')
         self.bot.reload_extension('profile_cmds')
         self.bot.reload_extension('match_cmds')
-        # self.bot.load_extension('booklist_pages')
-        self.bot.reload_extension('book_paginator')
+        # self.bot.reload_extension('book_paginator')
+        self.bot.reload_extension('books_view')
+        # self.bot.reload_extension('buttons_example')
 
 
 # TODO: better user errors and feedback on command execution

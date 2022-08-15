@@ -1,4 +1,4 @@
-from typing import Iterable, Any, Optional, List
+from typing import Iterable, Any, Optional, List, Literal
 from itertools import zip_longest
 import asyncio
 
@@ -42,3 +42,23 @@ def fetch_member_in_guild_by_id(
     return user
 
 
+def book_noun_by_numeral(
+        num_of_books: int) -> Literal["книга", "книги", "книг"]:
+    last_digit: int = num_of_books % 10
+    if last_digit == 1:
+        return "книга"
+    elif last_digit in [2, 3, 4]:
+        return "книги"
+    else:
+        return "книг"
+
+
+def book_numeral(num_of_books: int) -> str:
+    last_digit: int = num_of_books % 10
+    num: str = str(num_of_books)
+    if last_digit == 1:
+        return num + " книга"
+    elif last_digit in [2, 3, 4]:
+        return num + " книги"
+    else:
+        return num + " книг"

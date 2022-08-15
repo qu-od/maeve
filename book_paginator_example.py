@@ -39,7 +39,7 @@ class PageTest(commands.Cog):
 
     def _page_group_from_user_books(
             self, user_books: UserBooks,
-            books_on_page: int = 2  # TODO return it to 10
+            books_on_page: int = 10
     ) -> pages.PageGroup:
         partitioned_booklist: List[List[BookData]] = \
             list(grouper(user_books.books, books_on_page, fillvalue=None))

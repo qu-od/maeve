@@ -9,7 +9,6 @@ from wheel import fetch_member_in_guild_by_id
 
 
 # --------------------- BOOK DATA DATACLASSES ----------------------------------
-@dataclass
 class BookData:
     def __init__(
         self, title: str,
@@ -143,7 +142,7 @@ class Book:
     ) -> Tuple[Interest, bool, Optional[str]]:
         if interest is None:
             return None, True, None
-        if interest > 5:
+        if interest > 3:
             return None, False, "Interest value is too big"
         elif interest < 1:
             return None, False, "Interest value is too small"
@@ -217,7 +216,7 @@ class Book:
             + f"WHERE title = '{title}';"
         )
 
-    # ---------------------- FOR BOOKLIST PAGINATOR ----------------------------
+    # ---------------------------- FOR BOOKS_VIEW ------------------------------
     def get_public_user_booklists(
             self, bot_guilds: List[discord.Guild]
     ) -> List[UserBooks]:
@@ -238,7 +237,15 @@ class Book:
             for user in public_users
         ]
 
-
+    def get_user_books_by_user_name(
+            self, bot_guilds: List[discord.Guild],
+            user_name: str
+    ) -> UserBooks:
+        public_user_booklists: List[UserBooks] = \
+            self.get_public_user_booklists(bot_guilds)
+        for user_books in public_user_booklists:
+            if user_books.user.name == user_name:
+                return user_books
 
     # ------------------------------- MISC -------------------------------------
     @staticmethod
