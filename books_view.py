@@ -218,7 +218,7 @@ class BooksView(commands.Cog):
 
     @commands.slash_command(
         name='книжки',
-        description='create book view'
+        description='Что читали другие участники'
     )
     async def create_book_view(self, ctx: discord.ApplicationContext):
         view = discord.ui.View(timeout=None)

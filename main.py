@@ -155,14 +155,15 @@ class MaeveBot:
         in_app_user_name: str = form_in_app_user_name(ctx.author)
         self.db.exec_void(
             "INSERT INTO users"
-            + " (name, user_id, server_id, is_private, is_admin)"
+            + " (name, user_id, server_id, is_private, is_admin, about_me)"
             + " VALUES"
-            + " ('{name}', {uid}, {sid}, {is_private}, {is_admin});".format(
+            + " ('{name}', {uid}, {sid}, {is_private}, {is_admin}, '{about}');".format(
                 name=in_app_user_name,
                 uid=ctx.author.id,
                 sid=(ctx.guild.id if ctx.guild else "NULL"),
                 is_private=False,
                 is_admin=False,
+                about="NULL"
             )
         )
         await ctx.send(f'User {ctx.author.mention} registered in users')
@@ -171,7 +172,7 @@ class MaeveBot:
             # every other column may contain NULLs
             'author':    'varchar(300)',
             'read_year': 'integer',
-            'interest':   'smallint',
+            'interest':  'smallint',
             'review':    'text',
         }
         self.db.create_table(
@@ -310,6 +311,7 @@ class MaeveBot:
         # self.bot.load_extension('book_paginator')  # cog
         self.bot.load_extension('books_view')  # cog
         # self.bot.load_extension('buttons_example')  # cog
+        self.bot.load_extension('profile_view')  # cog
 
 
     # --------------------------- RELOADS --------------------------------------
@@ -326,6 +328,7 @@ class MaeveBot:
         # self.bot.reload_extension('book_paginator')
         self.bot.reload_extension('books_view')
         # self.bot.reload_extension('buttons_example')
+        self.bot.reload_extension('profile_view')
 
 
 # TODO: better user errors and feedback on command execution

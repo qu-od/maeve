@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Any, Optional
+from typing import Dict, List, Literal, Any, Optional, Tuple
 import os
 import functools
 
@@ -115,5 +115,14 @@ class Database:
             f"SELECT name FROM users WHERE user_id = {user_id};"
         )
         return rows[0][0]
+
+    def get_user_data_rows(
+            self, user_id: int
+    ) -> Tuple[Optional[str], Optional[int], Optional[str], bool]:
+        raise NotImplementedError
+        # rows: List[tuple] = self.exec_select(""
+        #
+        # )
+        # return rows[0]
 
 
