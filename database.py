@@ -78,6 +78,10 @@ class Database:
     def exec_void(self, cursor, query: str):
         cursor.execute(query)
 
+    @_with_cursor
+    def exec_void_safe(self, cursor, query: str, *query_params):
+        cursor.execute(query, tuple(*query_params))
+
     # ----------------------------- TABLE QUERIES ------------------------------
     def delete_table(self, name: str):
         """ Table format: table_schema.table_name"""
@@ -115,14 +119,5 @@ class Database:
             f"SELECT name FROM users WHERE user_id = {user_id};"
         )
         return rows[0][0]
-
-    def get_user_data_rows(
-            self, user_id: int
-    ) -> Tuple[Optional[str], Optional[int], Optional[str], bool]:
-        raise NotImplementedError
-        # rows: List[tuple] = self.exec_select(""
-        #
-        # )
-        # return rows[0]
 
 

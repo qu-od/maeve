@@ -257,10 +257,6 @@ class Book:
         return str(maybe_int) if maybe_int else "NULL"
 
 
-
-
-
-
 # --------------------------- BOOKLIST CLASS -----------------------------------
 class BookList(dict):
     def __init__(self):

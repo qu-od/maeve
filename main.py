@@ -5,11 +5,12 @@ from importlib import reload
 import discord
 from discord.ext import commands, pages
 
+import profile
 import database
-from database import Database, Columns
 import book
-from book import Book, BookList, BookData, BookDataStrict
 import wheel
+from database import Database, Columns
+from book import Book, BookList, BookData, BookDataStrict
 from wheel import form_in_app_user_name
 
 
@@ -318,6 +319,7 @@ class MaeveBot:
     @staticmethod
     def reload_modules():
         reload(database)
+        reload(profile)
         reload(book)
         reload(wheel)
 
