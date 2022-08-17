@@ -306,13 +306,12 @@ class MaeveBot:
 
     # ---------------------------- LOADS ---------------------------------------
     def load_bot_command_extensions(self):
-        self.bot.load_extension('book_cmds')
-        self.bot.load_extension('profile_cmds')
-        self.bot.load_extension('match_cmds')
-        # self.bot.load_extension('book_paginator')  # cog
-        self.bot.load_extension('books_view')  # cog
-        # self.bot.load_extension('buttons_example')  # cog
-        self.bot.load_extension('profile_view')  # cog
+        self.bot.load_extension('book_cmds')  # TODO make module into a cog
+        self.bot.load_extension('profile_cmds')  # TODO make module into a cog
+        self.bot.load_extension('match_cmds')  # TODO make module into a cog
+        self.bot.load_extension('books_view')
+        self.bot.load_extension('profile_view')
+        self.bot.load_extension('modals_example')
 
 
     # --------------------------- RELOADS --------------------------------------
@@ -327,10 +326,9 @@ class MaeveBot:
         self.bot.reload_extension('book_cmds')
         self.bot.reload_extension('profile_cmds')
         self.bot.reload_extension('match_cmds')
-        # self.bot.reload_extension('book_paginator')
         self.bot.reload_extension('books_view')
-        # self.bot.reload_extension('buttons_example')
         self.bot.reload_extension('profile_view')
+        self.bot.reload_extension('modals_example')
 
 
 # TODO: better user errors and feedback on command execution

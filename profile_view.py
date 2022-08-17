@@ -31,8 +31,8 @@ class UserProfileEmbed:
         )
         embed.add_field(
             name="Открыт ли профиль:",
-            value="Да" if self.user_profile.about_me else "Нет",
-            inline=True
+            value="Да" if self.user_profile.is_public else "Нет",
+            inline=False
         )
         embed.add_field(
             name="Книжек:",
@@ -47,7 +47,7 @@ class UserProfileEmbed:
         return embed
 
 
-class ProfileViewButtons(discord.ui.View):
+class ProfileView(discord.ui.View):
     @staticmethod
     def empty_embed(title: str) -> discord.Embed():
         return discord.Embed(title=title)
@@ -109,22 +109,23 @@ class ProfileViewButtons(discord.ui.View):
         )
 
 
-class ProfileView(commands.Cog):
+class ProfileViewCog(commands.Cog):
+
     @commands.slash_command(
         name='профиль',
         description='Ваш профиль в библиотеке'
     )
     async def create_profile_view(self, ctx: discord.ApplicationContext):
-        user_profile = UserProfile(self.user.id)
+        user_profile = UserProfile(ctx.author.id)
         await ctx.respond(
             embed=UserProfileEmbed(
                 ctx.author,
                 user_profile,
-                self.bot.get_guild(user_profile.start_guild_id)
+                ctx.bot.get_guild(user_profile.start_guild_id).name
             ).form(),
-            view=ProfileViewButtons(timeout=60)
+            view=ProfileView(timeout=60)
         )
 
 
 def setup(bot):
-    bot.add_cog(ProfileView(bot))
+    bot.add_cog(ProfileViewCog(bot))

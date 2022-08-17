@@ -31,13 +31,13 @@ class UserProfile:
             self.name,
             self.start_guild_id,
             self.about_me,
-            self.is_private
+            self.is_public
             ) = self._get_user_profile_data_row()
         self.user_book_stats: UserBookStats = self._get_user_book_stats()
 
     def _get_user_profile_data_row(self) -> ProfileData:
         return self.db.exec_select(
-            "SELECT name, server_id, about_me, is_private"
+            "SELECT name, server_id, about_me, is_public"
             + f" FROM users WHERE user_id = {self.user_id}"
         )[0]
 

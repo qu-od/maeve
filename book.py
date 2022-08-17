@@ -221,7 +221,7 @@ class Book:
             self, bot_guilds: List[discord.Guild]
     ) -> List[UserBooks]:
         query_rows: List[tuple] = Book.db.exec_select(
-            "SELECT user_id FROM users WHERE is_private = FALSE;"
+            "SELECT user_id FROM users WHERE is_public = TRUE;"
         )
         ids_of_public_users: List[int] = [
             row_tuple[0] for row_tuple in query_rows
